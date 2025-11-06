@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Management Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Custom Tailwind config for beige colors
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'beige-light': '#F5F5DC',
+            'beige-dark': '#D2B48C',
+            'brand-black': '#1a1a1a',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom gradient background */
+    body {
+      background: linear-gradient(to right, #ffffff, #F5F5DC);
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D2B48C;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #b89a74;
+    }
+
+    /* Tab content styling */
+    .tab-content {
+      display: none; /* Hidden by default */
+    }
+    .tab-content.active {
+      display: block; /* Shown when active */
+    }
+
+    /* Toast Notification */
+    #toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .toast {
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease-in-out;
+    }
+    .toast.success {
+      background-color: #059669; /* Emerald-600 */
+    }
+    .toast.error {
+      background-color: #DC2626; /* Red-600 */
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="text-brand-black">
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Header & Navigation -->
+  <header class="bg-brand-black text-white shadow-lg">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Library management dashboard</h1>
+      <div class="flex space-x-2">
+        <button class="nav-tab px-4 py-2 rounded-md font-medium hover:bg-beige-dark hover:text-black transition duration-200" data-tab="home">Home</button>
+        <button class="nav-tab px-4 py-2 rounded-md font-medium hover:bg-beige-dark hover:text-black transition duration-200" data-tab="books">Manage Books</button>
+        <button class="nav-tab px-4 py-2 rounded-md font-medium hover:bg-beige-dark hover:text-black transition duration-200" data-tab="students">Manage Students</button>
+        <button class="nav-tab px-4 py-2 rounded-md font-medium hover:bg-beige-dark hover:text-black transition duration-200" data-tab="reports">Issued Books (JOIN)</button>
+        <button class="nav-tab px-4 py-2 rounded-md font-medium hover:bg-beige-dark hover:text-black transition duration-200" data-tab="sql">DBMS Units Demo</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="container mx-auto p-6">
+
+    <!-- === Home Tab (Unit 2: Aggregates) === -->
+    <div id="tab-home" class="tab-content active">
+      <h2 class="text-3xl font-bold mb-6">Dashboard Overview (Unit 2: Aggregates)</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Book Stats -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-semibold mb-2">Book Statistics</h3>
+          <p>Total Book Titles: <span id="stat-total-books" class="font-bold text-lg">...</span></p>
+          <p>Total Copies (All): <span id="stat-total-copies" class="font-bold text-lg">...</span></p>
+          <p>Total Available Copies: <span id="stat-total-available" class="font-bold text-lg text-green-600">...</span></p>
+        </div>
+        <!-- Student Stats -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-semibold mb-2">Student Statistics</h3>
+          <p>Total Students: <span id="stat-total-students" class="font-bold text-lg">...</span></p>
+          <p>Avg. Books Issued: <span id="stat-avg-books" class="font-bold text-lg">...</span></p>
+        </div>
+        <!-- Issue Stats -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-semibold mb-2">Issuing Statistics</h3>
+          <p>Total Issues (All Time): <span id="stat-total-issued" class="font-bold text-lg">...</span></p>
+          <p>Currently Issued Books: <span id="stat-currently-issued" class="font-bold text-lg text-red-600">...</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- === Manage Books Tab (Unit 2: DML) === -->
+    <div id="tab-books" class="tab-content">
+      <h2 class="text-3xl font-bold mb-6">Manage Books (Unit 2: DML)</h2>
+      <!-- Add Book Form -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
+        <h3 class="text-xl font-semibold mb-4">Add New Book (INSERT)</h3>
+        <form id="add-book-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="text" id="book-title" placeholder="Title" class="p-2 border rounded-md" required>
+          <input type="text" id="book-author" placeholder="Author" class="p-2 border rounded-md" required>
+          <input type="number" id="book-total" placeholder="Total Copies" class="p-2 border rounded-md" required>
+          <input type="number" id="book-available" placeholder="Available Copies" class="p-2 border rounded-md" required>
+          <button type="submit" class="col-span-1 md:col-span-4 bg-brand-black text-white px-4 py-2 rounded-md font-medium hover:bg-gray-800 transition">Add Book</button>
+        </form>
+      </div>
+      
+      <!-- *** NEW: Search Books Form *** -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
+        <h3 class="text-xl font-semibold mb-4">Search Books</h3>
+        <!-- MODIFIED: Wrapped input in a flex container and added a button -->
+        <div class="flex gap-2">
+          <input type="text" id="book-search" placeholder="Search by title or author..." class="flex-grow p-2 border rounded-md">
+          <button id="btn-book-search" class="bg-brand-black text-white px-6 py-2 rounded-md font-medium hover:bg-gray-800 transition">Search</button>
+        </div>
+      </div>
+
+      <!-- Books Table -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 overflow-x-auto">
+        <h3 class="text-xl font-semibold mb-4">All Books (SELECT)</h3>
+        <table class="w-full min-w-lg">
+          <thead>
+            <tr class="text-left border-b-2 border-beige-dark">
+              <th class="p-2">ID</th>
+              <th class="p-2">Title</th>
+              <th class="p-2">Author</th>
+              <th class="p-2">Total</th>
+              <th class="p-2">Available</th>
+              <th class="p-2">Actions</th> <!-- *** NEW COLUMN *** -->
+            </tr>
+          </thead>
+          <tbody id="books-table-body">
+            <!-- JS will populate this -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- === Manage Students Tab (Unit 2: DML) === -->
+    <div id="tab-students" class="tab-content">
+      <h2 class="text-3xl font-bold mb-6">Manage Students (Unit 2: DML)</h2>
+      <!-- Add Student Form -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
+        <h3 class="text-xl font-semibold mb-4">Add New Student (INSERT)</h3>
+        <form id="add-student-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input type="text" id="student-name" placeholder="Name" class="p-2 border rounded-md" required>
+          <input type="email" id="student-email" placeholder="Email" class="p-2 border rounded-md" required>
+          <button type="submit" class="bg-brand-black text-white px-4 py-2 rounded-md font-medium hover:bg-gray-800 transition">Add Student</button>
+        </form>
+      </div>
+
+      <!-- *** NEW: Search Students Form *** -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
+        <h3 class="text-xl font-semibold mb-4">Search Students</h3>
+        <div class="flex gap-2">
+          <input type="text" id="student-search" placeholder="Search by name or email..." class="flex-grow p-2 border rounded-md">
+          <button id="btn-student-search" class="bg-brand-black text-white px-6 py-2 rounded-md font-medium hover:bg-gray-800 transition">Search</button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 overflow-x-auto">
+        <h3 class="text-xl font-semibold mb-4">All Students (SELECT)</h3>
+        <table class="w-full min-w-lg">
+          <thead>
+            <tr class="text-left border-b-2 border-beige-dark">
+              <th class="p-2">ID</th>
+              <th class="p-2">Name</th>
+              <th class="p-2">Email</th>
+              <th class="p-2">Books Issued</th>
+            </tr>
+          </thead>
+          <tbody id="students-table-body">
+            <!-- JS will populate this -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- === Reports Tab (Unit 2: Joins) === -->
+    <div id="tab-reports" class="tab-content">
+      <h2 class="text-3xl font-bold mb-6">Issued Books (Unit 2: JOIN)</h2>
+      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 overflow-x-auto">
+        <h3 class="text-xl font-semibold mb-4">All Issued Books (INNER JOIN)</h3>
+        <table class="w-full min-w-lg">
+          <thead>
+            <tr class="text-left border-b-2 border-beige-dark">
+              <th class="p-2">Issue ID</th>
+              <th class="p-2">Book Title</th>
+              <th class="p-2">Student Name</th>
+              <th class="p-2">Issue Date</th>
+              <th class="p-2">Due Date</th>
+              <th class="p-2">Return Date</th>
+            </tr>
+          </thead>
+          <tbody id="issued-books-table-body">
+            <!-- JS will populate this -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- === SQL Operations Tab (Units 2, 4, 5) === -->
+    <div id="tab-sql" class="tab-content">
+      <h2 class="text-3xl font-bold mb-6">DBMS Units Demo</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Unit 5: Transaction Management -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-semibold mb-4">Unit 5: Transaction Demo</h3>
+          <p class="text-sm mb-2 text-gray-600">Demonstrates COMMIT/ROLLBACK. Tries to issue a book. Fails if student has >= 5 books or book is unavailable. Triggers will update counts on success.</p>
+          <form id="form-transaction-issue" class="space-y-3">
+            <input type="number" id="trans-book-id" placeholder="Book ID" class="w-full p-2 border rounded-md" required>
+            <input type="number" id="trans-student-id" placeholder="Student ID" class="w-full p-2 border rounded-md" required>
+            <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition">Attempt Issue (COMMIT/ROLLBACK)</button>
+          </form>
+        </div>
+
+        <!-- Unit 4: Procedures & Functions -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
+          <h3 class="text-xl font-semibold mb-2">Unit 4: Procedures & Functions</h3>
+          <!-- Return Book (Procedure) -->
+          <form id="form-sp-return" class="space-y-3 p-4 border rounded-md">
+            <h4 class="font-semibold">Stored Procedure: Return Book</h4>
+            <p class="text-sm text-gray-600">Calls `SP_ReturnBook(?)`. Triggers will update counts.</p>
+            <input type="number" id="sp-issue-id" placeholder="Issue ID" class="w-full p-2 border rounded-md" required>
+            <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 transition">Run Stored Procedure</button>
+          </form>
+          <!-- Get Total Issued (Function) -->
+          <form id="form-fn-total" class="space-y-3 p-4 border rounded-md">
+            <h4 class="font-semibold">Function: Get Student's Total Books</h4>
+            <p class="text-sm text-gray-600">Calls `F_GetTotalIssued(?)`.</p>
+            <input type="number" id="fn-student-id" placeholder="Student ID" class="w-full p-2 border rounded-md" required>
+            <button type="submit" class="w-full bg-purple-600 text-white px-4 py-2 rounded-md font-medium hover:bg-purple-700 transition">Run Function</button>
+          </form>
+        </div>
+
+        <!-- Unit 4: View & Cursor -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
+          <h3 class="text-xl font-semibold mb-2">Unit 4: Views & Cursors</h3>
+          <!-- View -->
+          <div class="p-4 border rounded-md">
+            <h4 class="font-semibold">View: Currently Issued</h4>
+            <p class="text-sm text-gray-600 mb-2">Fetches from `V_CurrentlyIssuedBooks`.</p>
+            <button id="btn-view" class="w-full bg-yellow-600 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-700 transition">Load Data from View</button>
+            <pre id="view-output" class="mt-2 p-2 bg-gray-100 rounded-md overflow-auto max-h-48 hidden"></pre>
+          </div>
+          <!-- Cursor -->
+          <div class="p-4 border rounded-md">
+            <h4 class="font-semibold">Cursor Demo (via SP)</h4>
+            <p class="text-sm text-gray-600 mb-2">Calls `SP_ListBookTitles()` which uses a cursor.</p>
+            <button id="btn-cursor" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition">Run Cursor SP</button>
+            <pre id="cursor-output" class="mt-2 p-2 bg-gray-100 rounded-md overflow-auto max-h-48 hidden"></pre>
+          </div>
+        </div>
+
+        <!-- Unit 2: DDL -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-semibold mb-4">Unit 2: DDL Commands (Demo)</h3>
+          <p class="text-sm mb-4 text-gray-600">Demonstrates dynamic DDL execution. Creates, alters, and drops `TestTable`.</p>
+          <div class="flex space-x-4">
+            <button id="btn-ddl-create" class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-800 transition">CREATE Table</button>
+            <button id="btn-ddl-alter" class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-800 transition">ALTER Table</button>
+            <button id="btn-ddl-drop" class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-800 transition">DROP Table</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // --- Global Settings ---
+    const API_URL = 'http://localhost:3000';
+    let allBooksCache = []; // *** NEW: Cache for book search ***
+    let allStudentsCache = []; // *** NEW: Cache for student search ***
+
+    // --- Toast Notification Function ---
+    function showToast(message, isError = false) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${isError ? 'error' : 'success'}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      // Show the toast
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 100); // Small delay to allow CSS transition
+
+      // Hide and remove the toast
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          container.removeChild(toast);
+        }, 300); // Wait for fade out
+      }, 3000); // 3-second duration
+    }
+
+    // --- Tab Switching Logic ---
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.nav-tab');
+      const contents = document.querySelectorAll('.tab-content');
+      const homeTab = document.querySelector('[data-tab="home"]');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs and content
+          tabs.forEach(t => t.classList.remove('bg-beige-dark', 'text-black'));
+          contents.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to the one that was clicked
+          tab.classList.add('bg-beige-dark', 'text-black');
+          const tabId = tab.dataset.tab;
+          document.getElementById(`tab-${tabId}`).classList.add('active');
+        });
+      });
+      // Set home as active initially
+      document.getElementById('tab-home').classList.add('active');
+      homeTab.classList.add('bg-beige-dark', 'text-black');
+    }
+
+    // --- Data Fetching & Rendering ---
+    
+    // *** NEW: Function to filter and display books from cache ***
+    function filterAndDisplayBooks() {
+      const searchTerm = document.getElementById('book-search').value.toLowerCase();
+      const filteredBooks = allBooksCache.filter(book => 
+        book.title.toLowerCase().includes(searchTerm) || 
+        book.author.toLowerCase().includes(searchTerm)
+      );
+      
+      const tbody = document.getElementById('books-table-body');
+      tbody.innerHTML = filteredBooks.map(book => `
+        <tr class="border-b border-gray-200 hover:bg-beige-light">
+          <td class="p-2">${book.book_id}</td>
+          <td class="p-2">${book.title}</td>
+          <td class="p-2">${book.author}</td>
+          <td class="p-2">${book.total_copies}</td>
+          <td class="p-2">${book.available_copies}</td>
+          <!-- *** NEW: Action Buttons *** -->
+          <td class="p-2 flex gap-1">
+            <button 
+              class="btn-remove-copy bg-red-600 text-white px-2 py-1 rounded font-bold hover:bg-red-700 transition" 
+              data-book-id="${book.book_id}"
+            >-</button>
+            <button 
+              class="btn-add-copy bg-green-600 text-white px-2 py-1 rounded font-bold hover:bg-green-700 transition" 
+              data-book-id="${book.book_id}"
+            >+</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // *** MODIFIED: Fetch books, store in cache, and display ***
+    async function renderBooks() {
+      try {
+        const res = await fetch(`${API_URL}/books`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        allBooksCache = await res.json(); // Store in cache
+        filterAndDisplayBooks(); // Display using the new function
+      } catch (e) {
+        showToast('Failed to fetch books', true);
+        console.error(e);
+      }
+    }
+
+    // *** MODIFIED: Fetch students, store in cache, and display ***
+    async function renderStudents() {
+      try {
+        const res = await fetch(`${API_URL}/students`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        allStudentsCache = await res.json(); // Store in cache
+        filterAndDisplayStudents(); // Display using the new function
+      } catch (e) {
+        showToast('Failed to fetch students', true);
+        console.error(e);
+      }
+    }
+
+    // *** NEW: Function to filter and display students from cache (THIS WAS MISSING) ***
+    function filterAndDisplayStudents() {
+      const searchTerm = document.getElementById('student-search').value.toLowerCase();
+      const filteredStudents = allStudentsCache.filter(student => 
+        student.name.toLowerCase().includes(searchTerm) || 
+        student.email.toLowerCase().includes(searchTerm)
+      );
+      
+      const tbody = document.getElementById('students-table-body');
+      tbody.innerHTML = filteredStudents.map(s => `
+        <tr class="border-b border-gray-200 hover:bg-beige-light">
+          <td class="p-2">${s.student_id}</td>
+          <td class="p-2">${s.name}</td>
+          <td class="p-2">${s.email}</td>
+          <td class="p-2">${s.total_books_issued}</td>
+        </tr>
+      `).join('');
+    }
+
+    // *** NEW: Function to update book copies (THIS WAS BROKEN/MISSING) ***
+    async function updateBookCopies(bookId, action) {
+      // 1. Find the full book object from the cache
+      const book = allBooksCache.find(b => b.book_id == bookId);
+      if (!book) {
+        showToast('Could not find book to update.', true);
+        return;
+      }
+
+      // 2. Create a copy of the book object to modify
+      const updatedBook = { ...book };
+
+      if (action === 'add') {
+        updatedBook.total_copies = (updatedBook.total_copies || 0) + 1;
+        updatedBook.available_copies = (updatedBook.available_copies || 0) + 1;
+      } else if (action === 'remove') {
+        // 3. Add safety checks
+        if (updatedBook.available_copies <= 0) {
+          showToast('No available copies to remove.', true);
+          return;
+        }
+        if (updatedBook.total_copies <= 0) {
+          showToast('Total copies is already zero.', true);
+          return;
+        }
+        updatedBook.total_copies -= 1;
+        updatedBook.available_copies -= 1;
+      }
+
+      // 4. Send the *entire* updated book object to the PUT endpoint
+      // (This matches the server.js PUT /books/:id endpoint)
+      try {
+        const res = await fetch(`${API_URL}/books/${bookId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedBook) // Send all fields back
+        });
+        
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || 'Failed to update book');
+
+        showToast('Book copies updated!');
+        
+        // 5. Refresh data from server to show changes
+        renderBooks();
+        renderStats();
+      } catch (e) {
+        showToast(`Error: ${e.message}`, true);
+      }
+    }
+
+    // Fetch and render issued books (JOIN)
+    async function renderIssuedBooks() {
+      try {
+        const res = await fetch(`${API_URL}/issued-books`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const issuedBooks = await res.json();
+        const tbody = document.getElementById('issued-books-table-body');
+        tbody.innerHTML = issuedBooks.map(ib => `
+          <tr class="border-b border-gray-200 hover:bg-beige-light">
+            <td class="p-2">${ib.issue_id}</td>
+            <td class="p-2">${ib.book_title}</td>
+            <td class="p-2">${ib.student_name}</td>
+            <td class="p-2">${new Date(ib.issue_date).toLocaleDateString()}</td>
+            <td class="p-2">${new Date(ib.due_date).toLocaleDateString()}</td>
+            <td class="p-2">${ib.return_date ? new Date(ib.return_date).toLocaleDateString() : 'Not Returned'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        showToast('Failed to fetch issued books', true);
+        console.error(e);
+      }
+    }
+
+    // Fetch and render dashboard stats (Aggregates)
+    async function renderStats() {
+      try {
+        const res = await fetch(`${API_URL}/reports/stats`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const stats = await res.json();
+        document.getElementById('stat-total-books').textContent = stats.books.total_books;
+        document.getElementById('stat-total-copies').textContent = stats.books.total_copies;
+        document.getElementById('stat-total-available').textContent = stats.books.total_available;
+        document.getElementById('stat-total-students').textContent = stats.students.total_students;
+        document.getElementById('stat-avg-books').textContent = parseFloat(stats.students.avg_books_per_student || 0).toFixed(2);
+        document.getElementById('stat-total-issued').textContent = stats.issued.total_issued;
+        document.getElementById('stat-currently-issued').textContent = stats.issued.currently_issued;
+      } catch (e) {
+        showToast('Failed to fetch dashboard stats', true);
+        console.error(e);
+      }
+    }
+
+    // Helper to refresh all data
+    function refreshAllData() {
+      renderBooks();
+      renderStudents();
+      renderIssuedBooks();
+      renderStats();
+    }
+
+    // --- Event Listeners ---
+    
+    // Add Book Form (DML: INSERT)
+    document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // --- *** NEW VALIDATION *** ---
+      // Get values as numbers
+      const totalCopies = parseInt(document.getElementById('book-total').value, 10);
+      const availableCopies = parseInt(document.getElementById('book-available').value, 10);
+
+      // Check if available is greater than total
+      if (availableCopies > totalCopies) {
+        showToast('Error: Available copies cannot be greater than total copies.', true);
+        return; // Stop the function here
+      }
+      if (totalCopies < 0 || availableCopies < 0) {
+        showToast('Error: Copy counts cannot be negative.', true);
+        return; // Stop the function here
+      }
+      // --- *** END VALIDATION *** ---
+
+      const body = {
+        title: document.getElementById('book-title').value,
+        author: document.getElementById('book-author').value,
+        total_copies: totalCopies, // Use the parsed number
+        available_copies: availableCopies, // Use the parsed number
+      };
+      try {
+        const res = await fetch(`${API_URL}/books`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error('Server responded with error');
+        showToast('Book added successfully!');
+        e.target.reset();
+        renderBooks(); // Refresh book list (will re-fetch and re-apply search)
+        renderStats(); // Refresh stats
+      } catch (e) {
+        showToast(`Error adding book: ${e.message}`, true);
+      }
+    });
+
+    // Add Student Form (DML: INSERT)
+    document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        name: document.getElementById('student-name').value,
+        email: document.getElementById('student-email').value,
+      };
+      try {
+        const res = await fetch(`${API_URL}/students`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error('Server responded with error');
+        showToast('Student added successfully!');
+        e.target.reset();
+        renderStudents(); // Refresh
+        renderStats(); // Refresh
+      } catch (e) {
+        showToast(`Error adding student: ${e.message}`, true);
+      }
+    });
+
+    // --- SQL Operations Listeners ---
+
+    // DDL Buttons
+    document.getElementById('btn-ddl-create').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_URL}/sql/ddl/create`, { method: 'POST' });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+        showToast(result.message);
+      } catch (e) { showToast(e.message, true); }
+    });
+    document.getElementById('btn-ddl-alter').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_URL}/sql/ddl/alter`, { method: 'POST' });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+        showToast(result.message);
+      } catch (e) { showToast(e.message, true); }
+    });
+    document.getElementById('btn-ddl-drop').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_URL}/sql/ddl/drop`, { method: 'POST' });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+        showToast(result.message);
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    // View Button
+    document.getElementById('btn-view').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_URL}/views/issued`);
+        const data = await res.json();
+        const output = document.getElementById('view-output');
+        output.textContent = JSON.stringify(data, null, 2);
+        output.classList.remove('hidden');
+        showToast('View data loaded');
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    // Cursor Button
+    document.getElementById('btn-cursor').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_URL}/sql/cursor`);
+        const data = await res.json();
+        // The SP returns a result set within a result set
+        const titleString = (data && data.length > 0 && data[0].all_book_titles) ? data[0].all_book_titles : "No books found.";
+        const output = document.getElementById('cursor-output');
+        output.textContent = titleString;
+        output.classList.remove('hidden');
+        showToast('Cursor SP executed');
+      } catch (e) { 
+        showToast(e.message, true); 
+        console.error(e);
+      }
+    });
+    
+    // SP Return Form
+    document.getElementById('form-sp-return').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = { issue_id: document.getElementById('sp-issue-id').value };
+      try {
+        const res = await fetch(`${API_URL}/procedures/return`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+        showToast(result.message);
+        e.target.reset();
+        refreshAllData(); // Refresh all tables to see trigger effects
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    // Function Total Form
+    document.getElementById('form-fn-total').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const studentId = document.getElementById('fn-student-id').value;
+      try {
+        const res = await fetch(`${API_URL}/functions/total-issued/${studentId}`);
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+        showToast(`Student ${studentId} has ${result.total_issued} books issued.`);
+        e.target.reset();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    // Transaction Issue Form
+    document.getElementById('form-transaction-issue').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        book_id: document.getElementById('trans-book-id').value,
+        student_id: document.getElementById('trans-student-id').value,
+      };
+      try {
+        const res = await fetch(`${API_URL}/transactions/issue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const result = await res.json();
+        if (!res.ok || !result.success) throw new Error(result.error || result.message);
+        showToast(result.message); // Success (COMMIT)
+        e.target.reset();
+        refreshAllData(); // Refresh all tables to see transaction/trigger effects
+      } catch (e) { 
+        showToast(e.message, true); // Error (ROLLBACK)
+      }
+    });
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+      setupTabs(); 
+      refreshAllData();
+
+      // *** NEW: Add event listener for the book search input ***
+      document.getElementById('book-search').addEventListener('keyup', filterAndDisplayBooks);
+      // *** NEW: Add event listener for the book search button ***
+      document.getElementById('btn-book-search').addEventListener('click', filterAndDisplayBooks);
+
+      // *** NEW: Add event listeners for student search ***
+      document.getElementById('student-search').addEventListener('keyup', filterAndDisplayStudents);
+      document.getElementById('btn-student-search').addEventListener('click', filterAndDisplayStudents);
+
+      // *** NEW: Event delegation for book copy actions ***
+      document.getElementById('books-table-body').addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-add-copy')) {
+          const bookId = e.target.dataset.bookId;
+          updateBookCopies(bookId, 'add');
+        } else if (e.target.classList.contains('btn-remove-copy')) {
+          const bookId = e.target.dataset.bookId;
+          updateBookCopies(bookId, 'remove');
+        }
+      });
+    });
+
+  </script>
+
+</body>
+</html>

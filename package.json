@@ -1,0 +1,28 @@
+{
+  "name": "library-management-system",
+  "version": "1.0.0",
+  "description": "A complete Library Management System to demonstrate DBMS concepts.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "dbms",
+    "sql",
+    "nodejs",
+    "express",
+    "mysql"
+  ],
+  "author": "Gemini",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mysql2": "^3.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.2"
+  }
+}
